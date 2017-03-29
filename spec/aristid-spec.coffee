@@ -10,7 +10,7 @@ describe "deterministic, context-free", ->
 
     {expansion, p,next} = kochCurve()
     expect(expansion).to.eql "F+F−F−F+F+F+F−F−F+F−F+F−F−F+F−F+F−F−F+F+F+F−F−F+F"
-    expect(p).to.eql 1.0
+    expect((p-1)*(p-1)).to.be.lessThan .0000001
     expect(next()).to.be.null
 
 get = (p)->(o)->o[p]
@@ -63,8 +63,8 @@ describe "stochastic, context-free", ->
           {p:0.4, s: "a"}
         ]
     words = something.all()
-    console.log words.map get 'expansion'
-    expect( words
+    p=words
       .map get 'p'
       .reduce sum
-    ).to.eql 1
+    
+    expect((p-1)*(p-1)).to.be.lessThan .0000001
