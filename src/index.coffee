@@ -1,5 +1,5 @@
 Promise = require "bluebird"
-{Seq,Stack, fromJS,Record,Range} = require "immutable"
+WeightedRandom = require "./weighted-random"
 {isArray} = require "util"
 aristid = ({axiom:axiom, rules:rules0, iterations=1}={})->
 
@@ -21,93 +21,31 @@ aristid = ({axiom:axiom, rules:rules0, iterations=1}={})->
 
 
   matchingRules = (symbol,position,word)->
-    r=rules[symbol]
+    r=rules[symbol] ? []
 
 
-  Cx = Record
-    input:axiom
-    expansion:""
-    p:1
-    position:0
-    iteration:0
-    selection:0
-
-  firstChoice = new Cx
-  emptyStack = Stack()
-  initialStack = emptyStack.push firstChoice
-  start = ()->
-    findSolution initialStack
-
-  continuation = (stack=emptyStack)->()->findSolution stack
-
-
-  # starts or continues expanding a word, producing
-  # a stack of context frames. 
-  # The top frame contains the result of the expansion
-  # The remaining frames are new choice points created during 
-  # the expansion that can be continued at using this function
-  expand = (cx, choices=emptyStack)->
-    {input,expansion,p,selection, position:position0} = cx
-    #console.log "input", input
-    for position in [position0...input.length]
+  expand = (oracle) -> ({p:p0,s:input}, iteration) ->
+    expansion = ""
+    p=1
+    for position in [0...input.length]
       symbol = input[position]
-      rs =  matchingRules symbol, position, input
-      rule = rs?[selection]
-      if rule
-        #console.log symbol, position, selection,rule.s
-        selection = selection + 1
-        if selection < rs.length
-          choices = choices.push( cx
-            .set "position", position
-            .set "selection", selection
-            .set "p", p
-            .set "expansion", expansion
-          )
-        selection=0
+      candidateRules = matchingRules symbol, position, input
+      rule = oracle candidateRules
+      if rule?
+        #console.log "at", position, "use", rule
         expansion += rule.s
         p *= rule.p
       else
         expansion += symbol
-    #console.log "expansion", expansion
-    result = cx
-      .set "position", position
-      .set "selection", selection
-      .set "p", p
-      .set "expansion", expansion
-    choices.push result
+    #console.log "expansion",iteration,input," --> ", expansion
+    p: p0 * p
+    s: expansion
 
+  rnd = (rules)->
+    wr = WeightedRandom rules.map ({p})->p
+    rules[wr()]
 
-  reducer = (stack,i)->
-    cx0 = stack.peek()
-    cx = if cx0.selection then cx0 else 
-      cx0
-        .set "iteration",i
-        .set "expansion", ""
-        .set "input", if i>0 then cx0.expansion else axiom
-        .set "position", 0
-    expand cx, stack.pop()
+  (oracle = rnd)->
+    [0...iterations].reduce expand(oracle), p:1, s:axiom
 
-  findSolution = (stack)->
-    return null if stack.isEmpty()
-    {iteration} =stack.peek()
-    choices = Range(iteration,iterations).reduce reducer, stack
-    {p,expansion}=choices.peek()
-    next = continuation choices.pop()
-    p:p
-    expansion:expansion
-    next: next
-      
-  allSolutions = (stack)->
-    solutions = []
-    sl = findSolution stack
-    while sl?
-      solutions.push sl
-      sl=sl.next()
-    solutions
-    
-
-
-  api = ()-> findSolution initialStack
-  api.all = ()-> allSolutions initialStack
-  api
 module.exports = aristid

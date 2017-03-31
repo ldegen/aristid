@@ -8,16 +8,24 @@ describe "deterministic, context-free", ->
       rules: 
         F: "F+F−F−F+F"
 
-    {expansion, p,next} = kochCurve()
-    expect(expansion).to.eql "F+F−F−F+F+F+F−F−F+F−F+F−F−F+F−F+F−F−F+F+F+F−F−F+F"
+    {s, p} = kochCurve()
+    expect(s).to.eql "F+F−F−F+F+F+F−F−F+F−F+F−F−F+F−F+F−F−F+F+F+F−F−F+F"
     expect((p-1)*(p-1)).to.be.lessThan .0000001
-    expect(next()).to.be.null
 
 get = (p)->(o)->o[p]
 sum = (a,b)->a+b
 
+oracle = (nums...)->
+  i=0
+  (rules)->
+    if rules? and rules.length>0
+      choice = nums[i % nums.length]
+      #console.log "oracle: i=%d, choice=%d", i, choice
+      i=i+1
+      rules[choice]
+
 describe "stochastic, context-free", ->
-  it "produces one result and an oracle to get the next", ->
+  it "produces one result using an oracle for all decisions", ->
     something = aristid
       iterations:2
       axiom: "F"
@@ -27,44 +35,11 @@ describe "stochastic, context-free", ->
           {p:0.3, s: "+F+F"}
           {p:0.4, s: "a"}
         ]
-    {p,expansion, next,all} =something()
-    expect(p).to.eql 0.09
-    expect(expansion).to.eql "--F"
-    words = something.all()
-    expect( words
-      .map get 'p'
-      .reduce sum
-    ).to.eql 1
-    expect( words.map (w)->w.p+w.expansion).to.contain w for w in [
-      "0.09--F"
-      "0.09-+F+F"
-      "0.12-a"
-      "0.027+-F+-F"
-      "0.027+-F++F+F"
-      "0.036+-F+a"
-      "0.027++F+F+-F"
-      "0.027++F+F++F+F"
-      "0.036++F+F+a"
-      "0.036+a+-F"
-      "0.036+a++F+F"
-      "0.048+a+a"
-      "0.4a"
-    ]
+    {p,s} =something oracle 1, 0, 2
 
-  it "runs fast enough", ->
+    # p:1           s:F
+    # p:0.3         s:+F+F 
+    # p:0.3*0.3*0.4 s:+-F+a
 
-    something = aristid
-      iterations:4
-      axiom: "F"
-      rules:
-        F: [
-          {p:0.3, s: "-F"}
-          {p:0.3, s: "+F+F"}
-          {p:0.4, s: "a"}
-        ]
-    words = something.all()
-    p=words
-      .map get 'p'
-      .reduce sum
-    
-    expect((p-1)*(p-1)).to.be.lessThan .0000001
+    expect(p).to.eql 0.036
+    expect(s).to.eql "+-F+a"
