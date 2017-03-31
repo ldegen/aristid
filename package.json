@@ -1,6 +1,6 @@
 {
   "name": "aristid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "yet another js library for working with lindenmayer systems",
   "main": "lib/index.js",
   "scripts": {
