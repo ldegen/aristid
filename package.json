@@ -26,6 +26,7 @@
     "mocha": "^3.2.0"
   },
   "dependencies": {
+    "@l.degener/weighted-random": "^0.1.0",
     "bluebird": "^3.5.0",
     "immutable": "^4.0.0-rc.1"
   }

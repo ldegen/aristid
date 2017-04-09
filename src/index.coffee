@@ -1,5 +1,5 @@
 Promise = require "bluebird"
-WeightedRandom = require "./weighted-random"
+WeightedRandom = require "@l.degener/weighted-random"
 {isArray} = require "util"
 aristid = ({axiom:axiom, rules:rules0, iterations=1}={})->
 
